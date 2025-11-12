@@ -87,9 +87,7 @@ public class FileSystemManager implements Serializable{
             //Create new file entry
             inodeTable[freeIndex] = new FEntry(fileName, (short)0, (short)-1);
             System.out.println("File '" + fileName + "' created successfully.");
-
-        throw new UnsupportedOperationException("Method not implemented yet.");
-    } finally {
+        } finally {
             globalLock.unlock();    //Unlock
         }
     }
@@ -140,9 +138,7 @@ public class FileSystemManager implements Serializable{
             //Update file entry
             fileEntry.setFilesize((short)dataBytes.length);
             System.out.println("Data written to file '" + fileName + "' successfully.");
-
-        throw new UnsupportedOperationException("Method not implemented yet.");
-    } finally {
+        } finally {
             globalLock.unlock();    //Unlock
         }
     }
