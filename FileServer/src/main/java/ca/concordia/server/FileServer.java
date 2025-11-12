@@ -42,11 +42,76 @@ public class FileServer {
 
                         switch (command) {
                             case "CREATE":
-                                fsManager.createFile(parts[1]);
-                                writer.println("SUCCESS: File '" + parts[1] + "' created.");
+                                try{
+                                    if (parts.length < 2){
+                                       writer.println("ERROR: CREATE requires a file name!");
+                                    } else {
+                                        fsManager.createFile(parts[1]);
+                                        writer.println("SUCCESS: File '" + parts[1] + "' created.");
+                                    } 
+                                }catch (Exception e) {
+                                           writer.println("ERROR: " + e.getMessage());
+                                    }
                                 writer.flush();
                                 break;
-                            //TODO: Implement other commands READ, WRITE, DELETE, LIST
+                            
+                                //TODO: Implement other commands READ, WRITE, DELETE, LIST
+
+                            case "READ":
+                                try {
+                                    if (parts.length < 2){
+                                        writer.println("ERROR: Missing Filename!");
+                                    } else {
+                                        String result = fsManager.readFile(parts[1]);
+                                        writer.println("File Content: " + result);
+                                    }
+                                    } catch (Exception e) {
+                                        writer.println("ERROR: " + e.getMessage());
+                                    }
+                                    writer.flush();
+                                    break;
+
+                            case "WRITE":
+                                try {
+                                    if (parts.length < 3){
+                                    writer.println("ERROR: Missing Filename!");
+                                } else {
+                                    String filename = parts[1];
+                                    String content = parts[2];      //What comes after filename
+                                    fsManager.writeFile(filename, content);
+                                    writer.println("SUCCESS: File '" + filename + "' written.");
+                                }
+                            } catch (Exception e){
+                                writer.println("ERROR: " + e.getMessage());
+                            }
+                            writer.flush();
+                            break;
+
+                            case "DELETE":
+                                try {
+                                    if (parts.length < 2) {
+                                    writer.println("ERROR: Missing Filename!");
+                                } else {
+                                    String filename = parts[1];
+                                    fsManager.deleteFile(filename);
+                                    writer.println("SUCCESS: File '" + filename + "' deleted!");
+                                }
+                            } catch (Exception e) {
+                                writer.println("ERROR: " + e.getMessage());
+                            }
+                            writer.flush();
+                            break;
+
+                            case "LIST":
+                                try {
+                                    String list = fsManager.listFiles();
+                                    writer.println("Files: " + list);
+                            } catch (Exception e) {
+                                writer.println("ERROR: " + e.getMessage());
+                            }
+                            writer.flush();
+                            break;
+                            
                             case "QUIT":
                                 writer.println("SUCCESS: Disconnecting.");
                                 return;

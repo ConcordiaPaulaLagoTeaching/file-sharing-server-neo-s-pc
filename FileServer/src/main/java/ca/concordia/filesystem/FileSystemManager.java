@@ -190,15 +190,24 @@ public class FileSystemManager implements Serializable{
 
      //--LIST FILE--
     
-     public void listFiles() {
+     public String listFiles() {
         globalLock.lock();      // Lock to prevent concurent modifications
         try {
-            System.out.println("List of files: ");
+            StringBuilder sb = new StringBuilder();
+            sb.append("List of files: \n");
             for (FEntry entry : inodeTable) {
                 if (entry.isUsed()) {
-                    System.out.println("- " + entry.getFilename() + " (Size: " + entry.getFilesize() + " bytes)");
+                    sb.append("-")
+                      .append(entry.getFilename())
+                      .append(" (Size: ")
+                      .append(entry.getFilesize())
+                      .append(" bytes)\n");
                 }
             }
+            if (sb.toString().equals("List of files: \n")) {
+                return "No files found!";
+            }
+            return sb.toString();
         } finally {
             globalLock.unlock();    //Unlock
         }
