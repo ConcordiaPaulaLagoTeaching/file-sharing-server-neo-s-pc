@@ -5,7 +5,6 @@ package ca.concordia.filesystem;
 
 import ca.concordia.filesystem.datastructures.FEntry;
 
-import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.io.Serializable;
 import java.util.concurrent.locks.ReentrantLock;
@@ -48,7 +47,7 @@ public class FileSystemManager implements Serializable{
 
             System.out.println("File System initialized with: " + MAXFILES + " files and " + MAXBLOCKS + " blocks.");
 
-        } catch (IOException e) {
+        } catch (Exception e) {
             System.out.println("Error: Could not initialize file system!" + e.getMessage());
             this.disk = null;
         }
