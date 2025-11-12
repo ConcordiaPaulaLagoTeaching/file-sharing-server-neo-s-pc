@@ -16,7 +16,7 @@ public class FileSystemManager implements Serializable{
     private final int MAXFILES = 5;     // Max number of files
     private final int MAXBLOCKS = 10;   // Max number of blocks
     private final static FileSystemManager instance = null;
-    private final RandomAccessFile disk;
+    private RandomAccessFile disk;
     private final ReentrantLock globalLock = new ReentrantLock();   // Global lock for synchronizing access
 
     private static final int BLOCK_SIZE = 128; // Example block size
@@ -24,10 +24,10 @@ public class FileSystemManager implements Serializable{
     private FEntry[] inodeTable; // Array of inodes
     private boolean[] freeBlockList; // Bitmap for free blocks
 
-    public FileSystemManager(String filename, int totalSize) throws IOException {
+    public FileSystemManager(String filename, int totalSize) {
         // Initialize the file system manager with a file
-        if(instance == null) {
-                                            //TODO Initialize the file system 
+       try{
+            //TODO Initialize the file system 
             //Initialize file system
             this.inodeTable = new FEntry[MAXFILES];
             this.freeBlockList = new boolean[MAXBLOCKS];
@@ -48,8 +48,9 @@ public class FileSystemManager implements Serializable{
 
             System.out.println("File System initialized with: " + MAXFILES + " files and " + MAXBLOCKS + " blocks.");
 
-        } else {
-            throw new IllegalStateException("FileSystemManager is already initialized.");
+        } catch (IOException e) {
+            System.out.println("Error: Could not initialize file system!" + e.getMessage());
+            this.disk = null;
         }
     }
 
