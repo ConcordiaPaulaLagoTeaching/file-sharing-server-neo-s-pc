@@ -15,7 +15,7 @@ public class FileSystemManager implements Serializable{
 
     private final int MAXFILES = 5;     // Max number of files
     private final int MAXBLOCKS = 10;   // Max number of blocks
-    private final static FileSystemManager instance;
+    private final static FileSystemManager instance = null;
     private final RandomAccessFile disk;
     private final ReentrantLock globalLock = new ReentrantLock();   // Global lock for synchronizing access
 
@@ -24,7 +24,7 @@ public class FileSystemManager implements Serializable{
     private FEntry[] inodeTable; // Array of inodes
     private boolean[] freeBlockList; // Bitmap for free blocks
 
-    public FileSystemManager(String filename, int totalSize) {
+    public FileSystemManager(String filename, int totalSize) throws IOException {
         // Initialize the file system manager with a file
         if(instance == null) {
                                             //TODO Initialize the file system 
@@ -146,4 +146,65 @@ public class FileSystemManager implements Serializable{
             globalLock.unlock();    //Unlock
         }
     }
-}
+
+     //--READ FILE--
+
+     public String readFile(String fileName) throws Exception {
+        globalLock.lock();      // Lock to prevent concurent modifications
+        try {
+            //Find file entry
+            FEntry fileEntry = null;
+            for(FEntry entry : inodeTable) {
+                if(entry.isUsed() && fileName.equals(entry.getFilename())) {
+                    fileEntry = entry;
+                    break;
+                }
+            }
+
+            if(fileEntry == null) {
+                throw new Exception("ERROR: File not found!");
+            }
+
+            //Read data from blocks
+            byte[] readbytes = new byte[fileEntry.getFilesize()];
+            disk.seek(0);
+            disk.read(readbytes);
+            return new String(readbytes).trim();
+        } finally {
+            globalLock.unlock();    //Unlock
+        }
+    }
+
+    //--DELETE FILE--
+    public void deleteFile(String fileName) throws Exception {
+        globalLock.lock();      // Lock to prevent concurent modifications
+        try {
+            for (FEntry entry : inodeTable) {
+                if (entry.isUsed() && fileName.equals(entry.getFilename())) {
+                    entry.clear();
+                    System.out.println("File '" + fileName + "' deleted successfully.");
+                    return;
+                }
+            }
+            throw new Exception("ERROR: File not found!");
+        } finally {
+            globalLock.unlock();    //Unlock
+        }
+    }
+
+     //--LIST FILE--
+    
+     public void listFiles() {
+        globalLock.lock();      // Lock to prevent concurent modifications
+        try {
+            System.out.println("List of files: ");
+            for (FEntry entry : inodeTable) {
+                if (entry.isUsed()) {
+                    System.out.println("- " + entry.getFilename() + " (Size: " + entry.getFilesize() + " bytes)");
+                }
+            }
+        } finally {
+            globalLock.unlock();    //Unlock
+        }
+    }
+}   

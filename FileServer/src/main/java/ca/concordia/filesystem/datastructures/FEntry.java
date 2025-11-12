@@ -10,6 +10,12 @@ public class FEntry implements Serializable {
     private short filesize;     // Size in bytes
     private short firstBlock;   // Pointer to the first data block
 
+      public FEntry() {
+        this.filename = null;   // no filename yet = unused slot
+        this.filesize = 0;      // no data written yet
+        this.firstBlock = -1;   // -1 = no block assigned
+    }
+
     public FEntry(String filename, short filesize, short firstblock) throws IllegalArgumentException{
         
         //Check filename is max 11 bytes long
