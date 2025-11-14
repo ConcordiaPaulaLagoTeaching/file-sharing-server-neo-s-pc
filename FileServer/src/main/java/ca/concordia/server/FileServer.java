@@ -1,139 +1,101 @@
 package ca.concordia.server;
-import ca.concordia.filesystem.FileSystemManager;
 
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
+import ca.concordia.filesystem.FileSystemManager;
+import java.io.*;
+import java.net.*;
 
 public class FileServer {
 
-    private FileSystemManager fsManager;
-    private int port;
-    public FileServer(int port, String fileSystemName, int totalSize){
-       try{
-        // Initialize the FileSystemManager
-        FileSystemManager fsManager = new FileSystemManager(fileSystemName, totalSize);
-        this.fsManager = fsManager;
-       } catch (Exception e){
-            System.err.println("Error: Could not initialize FileSystemManager!");
-            this.fsManager = null;
-       }
+    private final FileSystemManager fs;
+    private final int port;
+
+    public FileServer(int port, String fsName, int totalSize) throws Exception {
         this.port = port;
+        this.fs = new FileSystemManager(fsName, totalSize);
     }
+    @SuppressWarnings("resource")
+    public void start() throws Exception {
+        ServerSocket server = new ServerSocket(port);
+        System.out.println("Server listening on " + port);
 
-    public void start(){
-        try (ServerSocket serverSocket = new ServerSocket(12345)) {
-            System.out.println("Server started. Listening on port 12345...");
-
-            while (true) {
-                Socket clientSocket = serverSocket.accept();
-                System.out.println("Handling client: " + clientSocket);
-                try (
-                        BufferedReader reader = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-                        PrintWriter writer = new PrintWriter(clientSocket.getOutputStream(), true)
-                ) {
-                    String line;
-                    while ((line = reader.readLine()) != null) {
-                        System.out.println("Received from client: " + line);
-                        String[] parts = line.split(" ");
-                        String command = parts[0].toUpperCase();
-
-                        switch (command) {
-                            case "CREATE":
-                                try{
-                                    if (parts.length < 2){
-                                       writer.println("ERROR: CREATE requires a file name!");
-                                    } else {
-                                        fsManager.createFile(parts[1]);
-                                        writer.println("SUCCESS: File '" + parts[1] + "' created.");
-                                    } 
-                                }catch (Exception e) {
-                                           writer.println("ERROR: " + e.getMessage());
-                                    }
-                                writer.flush();
-                                break;
-                            
-                                //TODO: Implement other commands READ, WRITE, DELETE, LIST
-
-                            case "READ":
-                                try {
-                                    if (parts.length < 2){
-                                        writer.println("ERROR: Missing Filename!");
-                                    } else {
-                                        String result = fsManager.readFile(parts[1]);
-                                        writer.println("File Content: " + result);
-                                    }
-                                    } catch (Exception e) {
-                                        writer.println("ERROR: " + e.getMessage());
-                                    }
-                                    writer.flush();
-                                    break;
-
-                            case "WRITE":
-                                try {
-                                    if (parts.length < 3){
-                                    writer.println("ERROR: Missing Filename!");
-                                } else {
-                                    String filename = parts[1];
-                                    String content = parts[2];      //What comes after filename
-                                    fsManager.writeFile(filename, content);
-                                    writer.println("SUCCESS: File '" + filename + "' written.");
-                                }
-                            } catch (Exception e){
-                                writer.println("ERROR: " + e.getMessage());
-                            }
-                            writer.flush();
-                            break;
-
-                            case "DELETE":
-                                try {
-                                    if (parts.length < 2) {
-                                    writer.println("ERROR: Missing Filename!");
-                                } else {
-                                    String filename = parts[1];
-                                    fsManager.deleteFile(filename);
-                                    writer.println("SUCCESS: File '" + filename + "' deleted!");
-                                }
-                            } catch (Exception e) {
-                                writer.println("ERROR: " + e.getMessage());
-                            }
-                            writer.flush();
-                            break;
-
-                            case "LIST":
-                                try {
-                                    String list = fsManager.listFiles();
-                                    writer.println("Files: " + list);
-                            } catch (Exception e) {
-                                writer.println("ERROR: " + e.getMessage());
-                            }
-                            writer.flush();
-                            break;
-                            
-                            case "QUIT":
-                                writer.println("SUCCESS: Disconnecting.");
-                                return;
-                            default:
-                                writer.println("ERROR: Unknown command.");
-                                break;
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                } finally {
-                    try {
-                        clientSocket.close();
-                    } catch (Exception e) {
-                        // Ignore
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            System.err.println("Could not start server on port " + port);
+        while (true) {
+            Socket client = server.accept();
+            new Thread(new ClientHandler(client, fs)).start();
         }
     }
 
+    private static class ClientHandler implements Runnable {
+        private final Socket sock;
+        private final FileSystemManager fs;
+
+        ClientHandler(Socket s, FileSystemManager fs) {
+            this.sock = s;
+            this.fs = fs;
+        }
+
+        public void run() {
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(sock.getInputStream()));
+                 PrintWriter out = new PrintWriter(sock.getOutputStream(), true)) {
+
+                String line;
+                while ((line = in.readLine()) != null) {
+
+                    String[] parts = line.trim().split(" ", 3);
+                    if (parts.length == 0) {
+                        out.println("ERROR: malformed command");
+                        continue;
+                    }
+
+                    String cmd = parts[0].toUpperCase();
+
+                    try {
+                        switch (cmd) {
+                            case "CREATE":
+                                if (parts.length < 2) { out.println("ERROR: malformed command"); break; }
+                                fs.createFile(parts[1]);
+                                out.println("OK");
+                                break;
+                                //TODO Implement other commands READ, WRITE, DELETE, LIST
+
+                            case "READ":
+                                if (parts.length < 2) { out.println("ERROR: malformed command"); break; }
+                                byte[] data = fs.readFile(parts[1]);
+                                out.println("OK " + new String(data));
+                                break;
+
+                            case "WRITE":
+                                if (parts.length < 3) { out.println("ERROR: malformed command"); break; }
+                                fs.writeFile(parts[1], parts[2].getBytes());
+                                out.println("OK");
+                                break;
+
+                            case "DELETE":
+                                if (parts.length < 2) { out.println("ERROR: malformed command"); break; }
+                                fs.deleteFile(parts[1]);
+                                out.println("OK");
+                                break;
+
+                            case "LIST":
+                                String[] names = fs.listFiles();
+                                out.println("OK " + String.join(",", names));
+                                break;
+
+                            case "QUIT":
+                                out.println("OK closing");
+                                return;
+
+                            default:
+                                out.println("ERROR: unknown command");
+                        }
+                    } catch (Exception e) {
+                        out.println(e.getMessage());
+                    }
+                }
+
+            } catch (IOException ignored) {
+            } finally {
+                try { sock.close(); } catch (Exception ignored) {}
+            }
+        }
+    }
 }
