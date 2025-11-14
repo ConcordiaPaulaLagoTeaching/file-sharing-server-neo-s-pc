@@ -1,41 +1,38 @@
 package ca.concordia.filesystem.datastructures;
 
-import java.util.LinkedList;
 import java.io.Serializable;
 
 public class FEntry implements Serializable {
-    private static final long serialVersionUID = 1L;    //Serialization so if changes occur in code, it won't break deserialization.
 
-    private String filename;    // Max 11 characters
-    private short filesize;     // Size in bytes
-    private short firstBlock;   // Pointer to the first data block
+    private static final long serialVersionUID = 1L;
 
-      public FEntry() {
-        this.filename = null;   // no filename yet = unused slot
-        this.filesize = 0;      // no data written yet
-        this.firstBlock = -1;   // -1 = no block assigned
+    private String filename;    
+    private short filesize;      
+    private short firstBlock;     
+
+    public FEntry() {
+        this.filename = null;
+        this.filesize = 0;
+        this.firstBlock = -1;
     }
 
-    public FEntry(String filename, short filesize, short firstblock) throws IllegalArgumentException{
-        
-        //Check filename is max 11 bytes long
-        if (filename.length() > 11) {
-            throw new IllegalArgumentException("Filename cannot be longer than 11 characters.");
-        }
-        this.filename = filename;
-        this.filesize = filesize;
-        this.firstBlock = firstblock;
+    public FEntry(String filename) {
+        setFilename(filename);
+        this.filesize = 0;
+        this.firstBlock = -1;
     }
 
+    public boolean isUsed() {
+        return filename != null && !filename.isEmpty();
+    }
     // Getters and Setters
     public String getFilename() {
         return filename;
     }
 
     public void setFilename(String filename) {
-        if (filename.length() > 11) {
-            throw new IllegalArgumentException("Filename cannot be longer than 11 characters.");
-        }
+        if (filename == null || filename.length() > 11) //Check filename is max 11 bytes long
+            throw new IllegalArgumentException("Filename cannot exceed 11 chars");
         this.filename = filename;
     }
 
@@ -44,9 +41,6 @@ public class FEntry implements Serializable {
     }
 
     public void setFilesize(short filesize) {
-        if (filesize < 0) {
-            throw new IllegalArgumentException("Filesize cannot be negative.");
-        }
         this.filesize = filesize;
     }
 
@@ -54,12 +48,10 @@ public class FEntry implements Serializable {
         return firstBlock;
     }
 
-    //Check if entry is used
-    public boolean isUsed() {
-        return filename != null && !filename.isEmpty();
+    public void setFirstBlock(short firstBlock) {
+        this.firstBlock = firstBlock;
     }
 
-    //Clear entry data(delete option)
     public void clear() {
         this.filename = null;
         this.filesize = 0;
@@ -68,6 +60,6 @@ public class FEntry implements Serializable {
 
     @Override
     public String toString() {
-        return "FEntry[filename= " + filename + ", filesize= " + filesize + ", firstBlock= " + firstBlock + "]";
+        return "[FEntry " + filename + " size=" + filesize + " first=" + firstBlock + "]";
     }
 }
